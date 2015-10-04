@@ -6,9 +6,10 @@ class static_tree_barrier {
 
  public:
     class Node{
-   public:
-      Node(Node parent, int count) : parent_(&parent), children_(count){
-         child_count_=count;
+    public:
+      Node(const Node &parent, int count) : children_(count){
+         *parent_=parent;
+         child_count_=children_;
       }
 
       void await(){
@@ -29,7 +30,7 @@ class static_tree_barrier {
          child_count_.fetch_sub(1);
       }
 
-   private:
+
       /* Number of children */
       unsigned int children_;
 
@@ -40,9 +41,9 @@ class static_tree_barrier {
       std::atomic<unsigned int> child_count_;
    };
 
-	static_tree_barrier (unsigned int n, unsigned int radix) : n_ (n), radix_(radix) {
+	static_tree_barrier (unsigned int n, unsigned int radix) : n_(n), radix_(radix) {
       nodes_ = 0;
-      //arr_nodes_.resize(n);
+      //arr_nodes_.resize(n_);
       unsigned int depth = 0;
 
       /* compute the depth */
@@ -61,20 +62,24 @@ class static_tree_barrier {
    void build(Node parent, int depth){
    // are we at a leaf node?
     if (depth == 0) {
-      //arr_nodes_[nodes_++] = Node(parent, 0);
+      //arr_nodes_[nodes_++] = new Node(parent, 0);
+      arr_nodes_.push_back( Node(parent, 0));
+      nodes_++;
     } else {
       Node myNode = Node(parent, radix_);
       //arr_nodes_[nodes_++] = myNode;
+      arr_nodes_.push_back(myNode);
+      nodes_++;
       for (int i = 0; i < radix_; i++) {
         build(myNode, depth - 1);
       }
     }
    }
 
-	void await() {
-		thrd_t t = thrd_current();
+	void await(int thread_id) {
+		//thrd_t t = thrd_current();
       //unsigned int thread_id = t.priv->get_id();
-      //arr_nodes_[thread_id].await();
+      arr_nodes_[thread_id].await();
 	}
 
  protected:
@@ -87,8 +92,7 @@ class static_tree_barrier {
    /* Sense */
    static bool sense_;
 
-   /* Array of nodes */
-   std::vector<Node> arr_nodes_();
+
 
    /* thread-local sense*/
    //thread_local bool thread_sense_;
@@ -98,6 +102,8 @@ class static_tree_barrier {
    unsigned int nodes_;
 
 
-
+private:
+   /* Array of nodes */
+   std::vector<Node> arr_nodes_;
 
 };

@@ -11,12 +11,12 @@ int var = 0;
 void threadA(void *arg)
 {
 	store_32(&var, 1);
-	barr->await();
+	//barr->await(0);
 }
 
 void threadB(void *arg)
 {
-	barr->await();
+	//barr->await(1);
 	printf("var = %d\n", load_32(&var));
 }
 
