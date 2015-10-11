@@ -5,36 +5,48 @@
 
 #include "librace.h"
 
-static_tree_barrier *barr;
+#define NUMREADERS 7
+#define RADIX 2
+
+struct info
+{
+    int value;
+};
+
+
+
+StaticTreeBarrier *barr;
 int var = 0;
 
-void threadA(void *arg)
+void threadA(void * pointer)
 {
-	store_32(&var, 1);
-	//barr->await(0);
+	info *inf = (info*) pointer;
+	barr->await(inf->value);
+	var++;
+
 }
 
-void threadB(void *arg)
-{
-	//barr->await(1);
-	printf("var = %d\n", load_32(&var));
-}
 
-#define NUMREADERS 1
+
+
 int user_main(int argc, char **argv)
 {
-	thrd_t A, B[NUMREADERS];
+	printf("Hi there!");
+	thrd_t B[NUMREADERS];
+
 	int i;
-/*
-	barr = new spinning_barrier(NUMREADERS + 1);
 
-	thrd_create(&A, &threadA, NULL);
-	for (i = 0; i < NUMREADERS; i++)
-		thrd_create(&B[i], &threadB, NULL);
+	barr = new StaticTreeBarrier(NUMREADERS, RADIX);
 
+
+	for (i = 0; i < NUMREADERS; i++){
+		info in;
+		in.value=i;
+		thrd_create(&B[i], &threadA, &in);
+	}
 	for (i = 0; i < NUMREADERS; i++)
 		thrd_join(B[i]);
-	thrd_join(A);
-*/
+
+
 	return 0;
 }
