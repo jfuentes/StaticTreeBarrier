@@ -1,8 +1,11 @@
+/**
+* Static Tree Barrier with atomic operations
+* author: Joel Fuentes - joel.fuentes@uci.edu
+**/
+
 #include <stdio.h>
 #include <threads.h>
-
 #include "statictreebarrier.h"
-
 #include "librace.h"
 
 #define NUMREADERS 7
@@ -22,7 +25,7 @@ void threadA(void * pointer)
 {
 	info *inf = (info*) pointer;
 	barr->await(inf->value);
-	var++;
+	store_32(&var, inf->value);
 
 }
 
@@ -31,7 +34,7 @@ void threadA(void * pointer)
 
 int user_main(int argc, char **argv)
 {
-	printf("Hi there!");
+	printf("Test A!");
 	thrd_t B[NUMREADERS];
 
 	int i;

@@ -1,16 +1,27 @@
+/**
+* Static Tree Barrier with atomic operations
+* author: Joel Fuentes - joel.fuentes@uci.edu
+**/
+
 #include <atomic>
 #include <vector>
 
-
+/* Class Static Tree Barrier with atomic operations*/
 class StaticTreeBarrier {
+
  public:
+    /* Node class */
     class Node{
+
     public:
+
+      //constructor
       Node(Node *parent, int count, StaticTreeBarrier *mybarrier) : children_(count){
          mybarrier_=mybarrier;
          parent_=parent;
          child_count_=children_;
       }
+
 
       void await(){
          bool mysense = mybarrier_->thread_sense_;
@@ -44,7 +55,8 @@ class StaticTreeBarrier {
       StaticTreeBarrier *mybarrier_;
     };
 
-	StaticTreeBarrier (int n, int radix) : n_(n), radix_(radix) {
+    //constructor
+	 StaticTreeBarrier (int n, int radix) : n_(n), radix_(radix) {
       nodes_ = 0;
       //arr_nodes_.resize(n_);
       unsigned int depth = 0;
@@ -79,34 +91,30 @@ class StaticTreeBarrier {
     }
    }
 
+   //this version needs the thread id as a parameter
 	void await(int thread_id) {
 		//thrd_t t = thrd_current();
       //unsigned int thread_id = t.priv->get_id();
       arr_nodes_[thread_id].await();
 	}
-/* thread-local sense*/
-bool  thread_sense_;
-bool sense_; // global sense
- protected:
-	/* Number of synchronized threads. */
+
+   //variables
+
+public:
+   /* thread-local sense*/
+   bool  thread_sense_;
+   bool sense_; // global sense
+
+private:
+   /* Number of synchronized threads. */
 	int n_;
 
    /* Radix */
    int radix_;
 
-
-
-
-
    /* used to build the tree */
    int nodes_;
 
-
-private:
    /* Array of nodes */
    std::vector<Node> arr_nodes_;
-
-
-
-
 };
