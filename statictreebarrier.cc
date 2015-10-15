@@ -8,7 +8,7 @@
 #include "statictreebarrier.h"
 #include "librace.h"
 
-#define NUMREADERS 7
+#define NUMREADERS 6
 #define RADIX 2
 
 struct info
@@ -24,9 +24,10 @@ int var = 0;
 void threadA(void * pointer)
 {
 	info *inf = (info*) pointer;
+	printf("\nThread %d has arrived ", inf->value);
 	barr->await(inf->value);
 	store_32(&var, inf->value);
-
+   printf("\nThread %d is done ", inf->value);
 }
 
 

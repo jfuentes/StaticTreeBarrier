@@ -16,32 +16,42 @@ class StaticTreeBarrier {
     public:
 
       //constructor
-      Node(Node *parent, int count, StaticTreeBarrier *mybarrier) : children_(count){
+      Node(Node *parent, int count, StaticTreeBarrier *mybarrier){
+         children_=count;
          mybarrier_=mybarrier;
          parent_=parent;
-         child_count_=children_;
+         atomic_init(&child_count_, 0);
+         child_count_.store(children_, std::memory_order_release);
       }
 
 
       void await(){
-         bool mysense = mybarrier_->thread_sense_;
-         while(child_count_.load()>0) {}; /* spin until children done */
-         child_count_ = children_;  /* prepare for next round */
+         bool mysense = mybarrier_->thread_sense_.load(std::memory_order_acquire);
+         printf("\nheere %d", children_);
+         while(child_count_.load(std::memory_order_acquire)>0) {
+            thrd_yield();
+         }; /* spin until children done */
+         printf("\nheere");
+         child_count_.store(children_, std::memory_order_release); /* prepare for next round */
          if(parent_ != NULL){ // not root
             parent_->childDone();  //indicate child subtree completion
-            while(mybarrier_->sense_ != mysense) {};  //wait for global sense to change
+            while(mybarrier_->sense_ != mysense) {
+               thrd_yield();
+            };  //wait for global sense to change
          }else{
-            mybarrier_->sense_ = !mybarrier_->sense_; // I am root: toggle global sense
+            // I am root: toggle global sense
+            mybarrier_->thread_sense_ .store(!mybarrier_->thread_sense_.load(std::memory_order_acquire), std::memory_order_release);
          }
-         mybarrier_->thread_sense_ = !mysense;  //toggle sense
-
+         //toggle sense
+         mybarrier_->thread_sense_.store(!mysense, std::memory_order_release);
       }
 
       void childDone(){
+         //atomic_store_explicit(&ptr->lock, UNLOCKED, memory_order_release);
          child_count_.fetch_sub(1);
       }
 
-    protected:
+   private:
       /* Number of children */
       unsigned int children_;
 
@@ -49,7 +59,7 @@ class StaticTreeBarrier {
       Node *parent_;
 
       /* Number of children incomplete */
-      std::atomic<unsigned int> child_count_;
+      std::atomic<int> child_count_;
 
       /*reference to the Barrier*/
       StaticTreeBarrier *mybarrier_;
@@ -69,7 +79,7 @@ class StaticTreeBarrier {
 
       build( NULL, depth);
       sense_ = false;
-      thread_sense_ = !sense_;
+      atomic_init(&thread_sense_ , !sense_);
 	}
 
 
@@ -102,7 +112,7 @@ class StaticTreeBarrier {
 
 public:
    /* thread-local sense*/
-   bool  thread_sense_;
+   std::atomic<bool>  thread_sense_;
    bool sense_; // global sense
 
 private:
