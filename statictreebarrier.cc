@@ -8,11 +8,10 @@
 #include "statictreebarrier.h"
 #include "librace.h"
 
-#define NUMREADERS 6
+#define NUMREADERS 7
 #define RADIX 2
 
-struct info
-{
+struct info{
     int value;
 };
 
@@ -21,8 +20,7 @@ struct info
 StaticTreeBarrier *barr;
 int var = 0;
 
-void threadA(void * pointer)
-{
+void testA(void * pointer){
 	info *inf = (info*) pointer;
 	printf("\nThread %d has arrived ", inf->value);
 	barr->await(inf->value);
@@ -33,9 +31,8 @@ void threadA(void * pointer)
 
 
 
-int user_main(int argc, char **argv)
-{
-	printf("Test A!");
+int user_main(int argc, char **argv){
+
 	thrd_t B[NUMREADERS];
 
 	int i;
@@ -46,7 +43,7 @@ int user_main(int argc, char **argv)
 	for (i = 0; i < NUMREADERS; i++){
 		info in;
 		in.value=i;
-		thrd_create(&B[i], &threadA, &in);
+		thrd_create(&B[i], &testA, &in);
 	}
 	for (i = 0; i < NUMREADERS; i++)
 		thrd_join(B[i]);

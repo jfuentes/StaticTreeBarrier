@@ -3,8 +3,12 @@
 * author: Joel Fuentes - joel.fuentes@uci.edu
 **/
 
-#include <atomic>
+#include <stdatomic.h>
 #include <vector>
+#include <model-assert.h>
+
+using namespace std;
+//#define DEBUG
 
 /* Class Static Tree Barrier with atomic operations*/
 class StaticTreeBarrier {
@@ -17,49 +21,57 @@ class StaticTreeBarrier {
 
       //constructor
       Node(Node *parent, int count, StaticTreeBarrier *mybarrier){
+         atomic_init(&child_count_, count);
+         #ifdef DEBUG
+         printf("\nNode created %d children", atomic_load(&child_count_));
+         #endif
          children_=count;
          mybarrier_=mybarrier;
          parent_=parent;
-         atomic_init(&child_count_, 0);
-         child_count_.store(children_, std::memory_order_release);
+
       }
 
 
       void await(){
-         bool mysense = mybarrier_->thread_sense_.load(std::memory_order_acquire);
-         printf("\nheere %d", children_);
-         while(child_count_.load(std::memory_order_acquire)>0) {
-            thrd_yield();
-         }; /* spin until children done */
-         printf("\nheere");
-         child_count_.store(children_, std::memory_order_release); /* prepare for next round */
+         bool mysense = atomic_load(&mybarrier_->thread_sense_);
+         #ifdef DEBUG
+         printf("\nCurrent children %d", children_);
+         #endif
+         while(1){
+            if(atomic_load(&child_count_)==0) {
+               break;
+            }
+               thrd_yield();
+         } /* spin until children done */
+
+         atomic_store(&child_count_, children_); /* prepare for next round */
          if(parent_ != NULL){ // not root
             parent_->childDone();  //indicate child subtree completion
-            while(mybarrier_->sense_ != mysense) {
+            while(atomic_load(&mybarrier_->sense_) != mysense) {
                thrd_yield();
-            };  //wait for global sense to change
+            }  //wait for global sense to change
          }else{
-            // I am root: toggle global sense
-            mybarrier_->thread_sense_ .store(!mybarrier_->thread_sense_.load(std::memory_order_acquire), std::memory_order_release);
+            // am root: toggle global sense
+            atomic_store(&mybarrier_->sense_, !mysense);
          }
          //toggle sense
-         mybarrier_->thread_sense_.store(!mysense, std::memory_order_release);
+         atomic_store(&mybarrier_->thread_sense_, !mysense);
       }
 
       void childDone(){
          //atomic_store_explicit(&ptr->lock, UNLOCKED, memory_order_release);
-         child_count_.fetch_sub(1);
+         atomic_fetch_sub(&child_count_, 1);
       }
 
    private:
       /* Number of children */
-      unsigned int children_;
+      int children_;
 
       /* reference to the parent */
       Node *parent_;
 
       /* Number of children incomplete */
-      std::atomic<int> child_count_;
+      atomic_int child_count_;
 
       /*reference to the Barrier*/
       StaticTreeBarrier *mybarrier_;
@@ -69,17 +81,21 @@ class StaticTreeBarrier {
 	 StaticTreeBarrier (int n, int radix) : n_(n), radix_(radix) {
       nodes_ = 0;
       //arr_nodes_.resize(n_);
-      unsigned int depth = 0;
+      int depth = 0;
 
       /* compute the depth */
       while(n > 1){
          depth++;
-         n = n / radix;
+         n = n / radix_;
       }
 
       build( NULL, depth);
-      sense_ = false;
-      atomic_init(&thread_sense_ , !sense_);
+
+      MODEL_ASSERT(arr_nodes_.size()==n_);
+      MODEL_ASSERT(nodes_==n_);
+
+      atomic_init(&sense_, false);
+      atomic_init(&thread_sense_ , true);
 	}
 
 
@@ -87,33 +103,30 @@ class StaticTreeBarrier {
    void build(Node *parent, int depth){
    // are we at a leaf node?
     if (depth == 0) {
-      //arr_nodes_[nodes_++] = new Node(parent, 0);
-      arr_nodes_.push_back( Node(parent, 0, this));
+      Node *myNode =new Node(parent, 0, this);
+      arr_nodes_.push_back( myNode);
       nodes_++;
     } else {
-      Node myNode = Node(parent, radix_, this);
-      //arr_nodes_[nodes_++] = myNode;
+      Node *myNode = new Node(parent, radix_, this);
       arr_nodes_.push_back(myNode);
       nodes_++;
       for (int i = 0; i < radix_; i++) {
-        build(&myNode, depth - 1);
+        build(myNode, depth - 1);
       }
     }
    }
 
    //this version needs the thread id as a parameter
 	void await(int thread_id) {
-		//thrd_t t = thrd_current();
-      //unsigned int thread_id = t.priv->get_id();
-      arr_nodes_[thread_id].await();
+      arr_nodes_[thread_id]->await();
 	}
 
-   //variables
+
 
 public:
    /* thread-local sense*/
-   std::atomic<bool>  thread_sense_;
-   bool sense_; // global sense
+   atomic_bool thread_sense_;
+   atomic_bool sense_; // global sense
 
 private:
    /* Number of synchronized threads. */
@@ -126,5 +139,5 @@ private:
    int nodes_;
 
    /* Array of nodes */
-   std::vector<Node> arr_nodes_;
+   std::vector<Node*> arr_nodes_;
 };
