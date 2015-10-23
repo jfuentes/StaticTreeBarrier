@@ -9,7 +9,7 @@
 #include "librace.h"
 #include <stdlib.h>
 
-#define NUMREADERS 7
+#define NUMREADERS 3
 #define RADIX 2
 
 struct info{
@@ -22,8 +22,6 @@ StaticTreeBarrier *barr;
 int var = 0;
 
 void testA(void * pointer){
-	//info *inf = (info*) pointer;
-	//printf("\nThread %d has arrived ", inf->value);
 	barr->await(* (int *)pointer);
 	//store_32(&var, inf->value);
    printf("\nThread %d is done ", * (int *)pointer);

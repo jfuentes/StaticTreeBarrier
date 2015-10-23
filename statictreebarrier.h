@@ -33,8 +33,7 @@ class StaticTreeBarrier {
 
 
       void await(){
-         //bool mysense = atomic_load(&mybarrier_->thread_sense_);
-         bool mysense = mybarrier_->thread_sense_;
+         bool mysense = atomic_load_explicit(&mybarrier_->thread_sense_, memory_order_relaxed);
          #ifdef DEBUG
          printf("\nCurrent children %d", children_);
          #endif
@@ -48,22 +47,18 @@ class StaticTreeBarrier {
          atomic_store_explicit(&child_count_, children_, memory_order_relaxed); /* prepare for next round */
          if(parent_ != NULL){ // not root
             parent_->childDone();  //indicate child subtree completion
-            //while(atomic_load(&mybarrier_->sense_) != mysense) {
-            while(mybarrier_->sense_ != mysense) {
+            while(atomic_load_explicit(&mybarrier_->sense_, memory_order_acquire) != mysense) {
                thrd_yield();
             };  //wait for global sense to change
          }else{
             // am root: toggle global sense
-            //atomic_store(&mybarrier_->sense_, mysense);
-            mybarrier_->sense_=mysense;
+            atomic_store_explicit(&mybarrier_->sense_, mysense, memory_order_release);
          }
          //toggle sense
-         //atomic_store(&mybarrier_->thread_sense_, !mysense);
-         mybarrier_->thread_sense_=!mysense;
+         atomic_store_explicit(&mybarrier_->thread_sense_, !mysense, memory_order_relaxed);
       }
 
       void childDone(){
-         //atomic_store_explicit(&ptr->lock, UNLOCKED, memory_order_release);
          atomic_fetch_sub_explicit(&child_count_, 1, memory_order_release);
       }
 
@@ -98,10 +93,10 @@ class StaticTreeBarrier {
       MODEL_ASSERT(arr_nodes_.size()==n_);
       MODEL_ASSERT(nodes_==n_);
 
-      sense_=false;
-      thread_sense_=true;
-      //atomic_init(&sense_, false);
-      //atomic_init(&thread_sense_ , true);
+      //sense_=false;
+      //thread_sense_=true;
+      atomic_init(&sense_, false);
+      atomic_init(&thread_sense_ , true);
 	}
 
 
@@ -131,9 +126,9 @@ class StaticTreeBarrier {
 
 public:
    /* thread-local sense*/
-   //atomic_bool thread_sense_;
-   //atomic_bool sense_; // global sense
-   bool sense_, thread_sense_;
+   atomic_bool thread_sense_;
+   atomic_bool sense_; // global sense
+
 private:
    /* Number of synchronized threads. */
 	int n_;
