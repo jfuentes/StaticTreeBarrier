@@ -1,5 +1,9 @@
 # Static Tree Barrier
 Author: Joel Fuentes - joel.fuentes@uci.edu
+The implementation is based on the algorithm described in the book "The Art of Multiprocessor
+Programming" plus some adjustments for C++11 with atomic types. I implemented the data structure following the same logic of the Java code presented in Chapter 17.5, this also means the solution is based
+on classes and objects. The main changes to port this solution to C++11 were based
+on the definition of atomic variables and their related operations.
 
 ## Files:
 - statictreebarrier.h: definition and implementation of the data structure
@@ -25,12 +29,7 @@ The implementation was made by considering only complete trees, this means all t
 where r is the radix value.
 The current number of threads is 3 with a radix of 2. Other values for number of threads are 7, 13, and so on.
 
-Description of the solution:
-The solution is based on the algorithm described in the book "The Art of Multiprocessor
-Programming" plus some adjustments for C++11 with atomic types. I implemented the data structure following
-the same logic of the Java code presented in Chapter 17.5, this also means the solution is based
-on classes and objects. The main changes to port this solution to C++11 were based
-on the definition of atomic variables and their related operations.
+
 
 ## The introduced changes are:
 - Definition of two classes StaticTreeBarrier and Node.
