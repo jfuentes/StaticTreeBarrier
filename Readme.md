@@ -1,16 +1,16 @@
-#Porting the Static Tree Barrier to C/C++11
+## Static Tree Barrier
 Author: Joel Fuentes - joel.fuentes@uci.edu
 
-#Files:
+# Files:
 - statictreebarrier.h: definition and implementation of the data structure
 - statictreebarrier.cc: Test case
 - Makefile: Script to compile the program
 
-#Before compiling:
+# Before compiling:
 - Download and build the CDSChecker (http://plrg.eecs.uci.edu/eecs221/lib/exe/fetch.php?media=model-checker.tgz).
 
 
-#Instruction to compile and execute:
+# Instruction to compile and execute:
 1. Put the source code (folder statictreebarrier) in the CDSChecker directory.
 2. Go into the statictreebarrier directory
 3. Compile:
