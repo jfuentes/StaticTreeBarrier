@@ -1,5 +1,6 @@
 # Static Tree Barrier
 Author: Joel Fuentes - joel.fuentes@uci.edu
+
 The implementation is based on the algorithm described in the book "The Art of Multiprocessor
 Programming" plus some adjustments for C++11 with atomic types. I implemented the data structure following the same logic of the Java code presented in Chapter 17.5, this also means the solution is based
 on classes and objects. The main changes to port this solution to C++11 were based
