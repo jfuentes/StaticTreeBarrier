@@ -1,7 +1,7 @@
 # Static Tree Barrier
 Author: Joel Fuentes - joel.fuentes@uci.edu
 
-# Files:
+## Files:
 - statictreebarrier.h: definition and implementation of the data structure
 - statictreebarrier.cc: Test case
 - Makefile: Script to compile the program
